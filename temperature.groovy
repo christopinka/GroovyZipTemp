@@ -14,17 +14,13 @@ if(!zipCode.matches(validZipPattern)){
 	println 'Double check your zip code. Only 5 digit zip codes are allowed. Sorry.'
 	return
 }
-/**
-def urlBaseStem = ''
-def params = [chs:'250x100', chd:'t:60,40', cht:'p3', chl:'Hello|World']
 
-def url = base + params.collect { k,v -> "$k=$v" }.join('&')
->>>>>>>>def url = base + params.collect { it }.join('&')
+def urlBaseStem = 'http://maps.googleapis.com/maps/api/geocode/json?'
+def params = [address:"${ zipCode }", sensor:'true']
+def url = urlBaseStem + params.collect { k,v -> "$k=${ URLEncoder.encode(v) }" }.join('&')
 
-
-**/
 //todo. 404 or other http response? When can response be null?
-def geoCodeResponse = new URL("http://maps.googleapis.com/maps/api/geocode/json?address=${zipCode}&sensor=true").text
+def geoCodeResponse = new URL(url).text
 def locations = new JsonSlurper().parseText(geoCodeResponse)
 
 //println locations
@@ -36,38 +32,15 @@ if(locations.status != 'OK'){
 	return
 }
 
+def location = locations?.results?.find{ it.address_components?.long_name?.find{ country-> country.equals('United States') } }
 
-//todo. results, address_components could break, null or not found, wrap accordingly
-/**
-println 'fa: ' + locations.results.formatted_address
-println 'type: ' + locations.results.address_components.types.findAll()
-
-def t = locations.results.find{it.formatted_address.equals('Columbia, MO 65203, USA')}
-def location = locations.results.find{it.address_components.types.contains('country')}
-println location
-**/
-
-def country
-	locations.results.address_components.each{addressComponent ->
-		addressComponent.each{ 
-			if (it.types.contains('country') && it.long_name.equals('United States')){
-				country = it.long_name	
-			}
-		}	
-	}
-
-// Country other than US or US not found
-if(!country.equals('United States')){
-	println 'The region for zip code ${zipCode} is outside of the United States.'
-	return
-}
 
 //def foo 
 //foo = ['bar', 'baz']
 //assert "bar" == foo?.find{true}
 	//Otherwise take the first US result in the list of possibly ambiguous results and avoid out of bounds if empty
 
-def address = locations?.results?.formatted_address?.find{true}
+def address = location?.formatted_address
 
 	//Was address found?
 if(address == null){
